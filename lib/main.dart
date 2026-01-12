@@ -1438,4 +1438,242 @@ class _AdminScreenState extends State<AdminScreen> {
               ),
               const SizedBox(height: 30),
               ElevatedButton.icon(
-                onP
+                                onPressed: () {
+                  setState(() {
+                    _loadProducts();
+                    _loadOrders();
+                  });
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('لوحة التحكم 👨‍💼'),
+          bottom: TabBar(
+            indicatorColor: AppTheme.primaryColor,
+            labelColor: AppTheme.primaryColor,
+            unselectedLabelColor: Colors.grey,
+            tabs: const [
+              Tab(icon: Icon(Icons.add_box), text: 'إضافة منتج'),
+              Tab(icon: Icon(Icons.list_alt), text: 'الطلبات'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            // تبويب إضافة منتج
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          color: AppTheme.cardDark,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: _imageFile != null 
+                                ? AppTheme.primaryColor 
+                                : Colors.grey.withOpacity(0.3),
+                            width: 2,
+                          ),
+                          image: _imageFile != null
+                              ? DecorationImage(
+                                  image: FileImage(_imageFile!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: _imageFile == null
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    size: 60,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  const Text('اضغط لاختيار صورة المنتج'),
+                                ],
+                              )
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'اسم المنتج',
+                        prefixIcon: Icon(Icons.cake),
+                      ),
+                      validator: (v) => v!.isEmpty ? 'مطلوب' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'السعر',
+                        prefixIcon: Icon(Icons.attach_money),
+                      ),
+                      validator: (v) => v!.isEmpty ? 'مطلوب' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'وصف المنتج',
+                        prefixIcon: Icon(Icons.description),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: _isUploading ? null : _addNewProduct,
+                      icon: _isUploading 
+                          ? const SizedBox(
+                              width: 20, 
+                              height: 20, 
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
+                            )
+                          : const Icon(Icons.save),
+                      label: Text(_isUploading ? 'جاري الحفظ...' : 'حفظ المنتج'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    if (_products.isNotEmpty) ...[
+                      const Text(
+                        'المنتجات الحالية:',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 10),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _products.length,
+                        separatorBuilder: (c, i) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final product = _products[index];
+                          return Card(
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundImage: CachedNetworkImageProvider(product.image),
+                              ),
+                              title: Text(product.name),
+                              subtitle: Text('${product.price} ج.م'),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _deleteProduct(product.id!, product.name),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
+            // تبويب الطلبات
+            _orders.isEmpty
+                ? const Center(child: Text('لا توجد طلبات حتى الآن'))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _orders.length,
+                    itemBuilder: (context, index) {
+                      final order = _orders[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: InkWell(
+                          onTap: () => _showOrderDetails(order),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'طلب #${order.id!.substring(0, 5)}',
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(order.status).withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        _getStatusText(order.status),
+                                        style: TextStyle(
+                                          color: _getStatusColor(order.status),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                                        const SizedBox(width: 4),
+                                        Text(order.customerName ?? 'زبون'),
+                                      ],
+                                    ),
+                                    Text(
+                                      NumberFormat.simpleCurrency(locale: 'ar_EG').format(order.total),
+                                      style: TextStyle(
+                                        color: AppTheme.primaryColor,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      DateFormat('dd/MM/yyyy hh:mm a').format(order.createdAt.toDate()),
+                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
+}
