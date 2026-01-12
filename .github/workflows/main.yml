@@ -35,6 +35,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Konafa-Flutter-App
+          name: Konafa_Flutter-App
           path: build/app/outputs/flutter-apk/app-release.apk
 
