@@ -1,4 +1,4 @@
-import 'dart:ui' as ui; // <--- تم إضافة هذا السطر للإصلاح
+import 'dart:ui' as ui;
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -10,9 +10,30 @@ import 'package:http/http.dart' as http;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 
+// متغير لمعرفة حالة الاتصال
+bool isFirebaseConnected = false;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); 
+  
+  try {
+    // محاولة الاتصال بفايربيز يدوياً باستخدام بياناتك
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: "AIzaSyDWPN3hCNjW2arTtdrs3ueIZveHg9ie5gU",
+        appId: "1:44212119840:web:8106de80c8c5abb6674f45", // ملاحظة: هذا معرف الويب، قد يعمل وقد نحتاج لتغييره لاحقاً
+        messagingSenderId: "44212119840",
+        projectId: "konafasystem",
+        storageBucket: "konafasystem.firebasestorage.app",
+      ),
+    );
+    isFirebaseConnected = true;
+  } catch (e) {
+    debugPrint("خطأ في الاتصال بفايربيز: $e");
+    // التطبيق سيعمل حتى لو فشل الاتصال
+    isFirebaseConnected = false;
+  }
+  
   runApp(const KonafaApp());
 }
 
@@ -93,7 +114,6 @@ class KonafaApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       builder: (context, child) {
-        // الإصلاح هنا: استخدام ui.TextDirection بدلاً من TextDirection المباشر
         return Directionality(textDirection: ui.TextDirection.rtl, child: child!);
       },
       home: const MainNavigationScreen(),
@@ -147,26 +167,38 @@ class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   Stream<List<Product>> getProductsStream() {
+    if (!isFirebaseConnected) {
+      // بيانات وهمية للعرض في حالة فشل الاتصال
+      return Stream.value([
+        Product(id: '1', name: 'كنافة نابلسية', price: 150, image: 'https://placehold.co/600x400/ea580c/white?text=Konafa'),
+        Product(id: '2', name: 'كنافة بالقشطة', price: 120, image: 'https://placehold.co/600x400/ea580c/white?text=Cream'),
+        Product(id: '3', name: 'بسبوسة مكسرات', price: 90, image: 'https://placehold.co/600x400/ea580c/white?text=Basbousa'),
+      ]);
+    }
     return _db.collection('products').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) => Product.fromFirestore(doc)).toList();
     });
   }
 
   Stream<List<OrderModel>> getOrdersStream() {
+    if (!isFirebaseConnected) return Stream.value([]);
     return _db.collection('orders').orderBy('createdAt', descending: true).snapshots().map((snapshot) {
       return snapshot.docs.map((doc) => OrderModel.fromFirestore(doc)).toList();
     });
   }
 
   Future<void> addProduct(Product product) {
+    if (!isFirebaseConnected) return Future.error("لا يوجد اتصال بقاعدة البيانات");
     return _db.collection('products').add(product.toMap());
   }
 
   Future<void> updateOrderStatus(String orderId, String status) {
+    if (!isFirebaseConnected) return Future.error("لا يوجد اتصال");
     return _db.collection('orders').doc(orderId).update({'status': status});
   }
 
   Future<void> placeOrder(double total, List<Product> cartItems) {
+    if (!isFirebaseConnected) return Future.error("لا يوجد اتصال");
     return _db.collection('orders').add({
       'total': total,
       'status': 'PENDING',
@@ -196,11 +228,9 @@ class UploadService {
         var jsonResponse = json.decode(responseString);
         return "https://ucarecdn.com/${jsonResponse['file']}/";
       } else {
-        debugPrint("فشل الرفع: ${response.statusCode}");
         return null;
       }
     } catch (e) {
-       debugPrint("خطأ في الرفع: $e");
        return null;
     }
   }
@@ -276,6 +306,11 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('كنافة بالقشطة 🥧'),
         actions: [
+          if (!isFirebaseConnected)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Icon(Icons.wifi_off, color: Colors.red),
+            ),
           Stack(
             alignment: Alignment.center,
             children: [
@@ -423,11 +458,17 @@ class HomeScreen extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () async {
                     Navigator.pop(context);
-                    await db.placeOrder(total, cart);
-                    clearCart();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('تم إرسال طلبك بنجاح! 🎉'), backgroundColor: Colors.green)
-                    );
+                    if (isFirebaseConnected) {
+                       await db.placeOrder(total, cart);
+                       clearCart();
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         const SnackBar(content: Text('تم إرسال طلبك بنجاح! 🎉'), backgroundColor: Colors.green)
+                       );
+                    } else {
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         const SnackBar(content: Text('وضع العرض فقط: لم يتم حفظ الطلب'), backgroundColor: Colors.orange)
+                       );
+                    }
                   },
                   child: const Text('تأكيد الطلب الآن'),
                 ),
@@ -457,6 +498,22 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!isFirebaseConnected) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('لوحة التحكم 👨‍💼')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 60, color: Colors.red),
+              const SizedBox(height: 20),
+              const Text("لا يوجد اتصال بقاعدة البيانات", style: TextStyle(fontSize: 18)),
+              const Text("تأكد من إعدادات Firebase للأندرويد", style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('لوحة التحكم 👨‍💼'),
@@ -651,4 +708,3 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 }
-
