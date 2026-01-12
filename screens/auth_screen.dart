@@ -330,3 +330,90 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                             TextFormField(
                               controller: _registerPhoneController,
                               decoration: const InputDecoration(
+                                labelText: 'رقم الهاتف',
+                                prefixIcon: Icon(Icons.phone_rounded),
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.phone,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'الرجاء إدخال رقم الهاتف';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            TextFormField(
+                              controller: _registerPasswordController,
+                              decoration: InputDecoration(
+                                labelText: 'كلمة المرور',
+                                prefixIcon: const Icon(Icons.lock_rounded),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _registerPasswordVisible
+                                        ? Icons.visibility_off_rounded
+                                        : Icons.visibility_rounded,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _registerPasswordVisible = !_registerPasswordVisible;
+                                    });
+                                  },
+                                ),
+                                border: const OutlineInputBorder(),
+                              ),
+                              obscureText: !_registerPasswordVisible,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'الرجاء إدخال كلمة المرور';
+                                }
+                                if (value.length < 6) {
+                                  return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 30),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: _isRegistering ? null : _register,
+                                icon: _isRegistering
+                                    ? SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.person_add_rounded),
+                                label: Text(_isRegistering ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _loginEmailController.dispose();
+    _loginPasswordController.dispose();
+    _registerEmailController.dispose();
+    _registerPasswordController.dispose();
+    _registerNameController.dispose();
+    _registerPhoneController.dispose();
+    super.dispose();
+  }
+}
