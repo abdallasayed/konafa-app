@@ -1,3 +1,4 @@
+import 'dart:async'; // هذا هو الحل
 import 'dart:ui' as ui;
 import 'dart:convert';
 import 'dart:io';
@@ -1327,7 +1328,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final DatabaseService db = DatabaseService();
   final LocalStorageService localStorage = LocalStorageService();
   UserModel? currentUser;
-  StreamSubscription? _userSubscription;
+  StreamSubscription? _userSubscription; // تم إصلاح المشكلة
 
   @override
   void initState() {
