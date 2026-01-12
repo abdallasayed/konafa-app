@@ -21,13 +21,9 @@ dependencies:
   
   # Utilities
   image_picker: ^1.0.4
-  intl: ^0.18.1  # تم التعديل هنا
+  intl: ^0.18.1
   shared_preferences: ^2.2.2
   http: ^1.1.0
-  
-  # لاحقاً يمكن إضافتها
-  # firebase_messaging: ^14.7.10
-  # url_launcher: ^6.1.14
 
 dev_dependencies:
   flutter_test:
@@ -36,14 +32,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  generate: true
-  
-  assets:
-    - assets/images/
-  
-  fonts:
-    - family: Cairo
-      fonts:
-        - asset: fonts/Cairo-Regular.ttf
-        - asset: fonts/Cairo-Bold.ttf
-          weight: 700
