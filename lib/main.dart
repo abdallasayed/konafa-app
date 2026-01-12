@@ -1,3 +1,4 @@
+import 'dart:ui' as ui; // <--- تم إضافة هذا السطر للإصلاح
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -9,22 +10,16 @@ import 'package:http/http.dart' as http;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 
-// ==================== تهيئة التطبيق ====================
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // ملاحظة هامة: يجب عليك إعداد Firebase لمشروع Flutter الخاص بك
-  // باستخدام FlutterFire CLI قبل تشغيل هذا السطر.
   await Firebase.initializeApp(); 
   runApp(const KonafaApp());
 }
 
-// ==================== الثيم والتصميم (الجزء الجميل) ====================
-
 class AppTheme {
-  static const Color primaryColor = Color(0xFFEA580C); // لون الكنافة البرتقالي
-  static const Color darkBackground = Color(0xFF0F172A); // خلفية داكنة عميقة
-  static const Color cardDark = Color(0xFF1E293B); // لون الكروت الداكنة
+  static const Color primaryColor = Color(0xFFEA580C);
+  static const Color darkBackground = Color(0xFF0F172A);
+  static const Color cardDark = Color(0xFF1E293B);
   static const Color textColor = Color(0xFFF8FAFC);
 
   static ThemeData get darkTheme {
@@ -96,17 +91,15 @@ class KonafaApp extends StatelessWidget {
     return MaterialApp(
       title: 'كنافة بالقشطة',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme, // استخدام الثيم المظلم الجميل
-      // لدعم اللغة العربية بشكل صحيح
+      theme: AppTheme.darkTheme,
       builder: (context, child) {
-        return Directionality(textDirection: TextDirection.rtl, child: child!);
+        // الإصلاح هنا: استخدام ui.TextDirection بدلاً من TextDirection المباشر
+        return Directionality(textDirection: ui.TextDirection.rtl, child: child!);
       },
       home: const MainNavigationScreen(),
     );
   }
 }
-
-// ==================== نماذج البيانات (Models) ====================
 
 class Product {
   String? id;
@@ -150,8 +143,6 @@ class OrderModel {
   }
 }
 
-// ==================== الخدمات (Services) ====================
-
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
@@ -176,12 +167,11 @@ class DatabaseService {
   }
 
   Future<void> placeOrder(double total, List<Product> cartItems) {
-     // تبسيط للطلب: في التطبيق الحقيقي يجب حفظ تفاصيل المنتجات في الطلب
     return _db.collection('orders').add({
       'total': total,
       'status': 'PENDING',
       'createdAt': Timestamp.now(),
-      'itemsCount': cartItems.length, // مثال لبيانات إضافية
+      'itemsCount': cartItems.length,
     });
   }
 }
@@ -216,9 +206,6 @@ class UploadService {
   }
 }
 
-// ==================== واجهات المستخدم (UI Screens) ====================
-
-// 1. شاشة التنقل الرئيسية (Bottom Navigation)
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
   @override
@@ -227,7 +214,6 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
-  // قائمة بسيطة للسلة (لغرض العرض فقط)
   List<Product> cart = [];
 
   void addToCart(Product product) {
@@ -274,7 +260,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// 2. الشاشة الرئيسية (للزبائن)
 class HomeScreen extends StatelessWidget {
   final Function(Product) addToCart;
   final VoidCallback clearCart;
@@ -437,7 +422,6 @@ class HomeScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
-                    // هنا يتم تنفيذ الطلب
                     Navigator.pop(context);
                     await db.placeOrder(total, cart);
                     clearCart();
@@ -456,7 +440,6 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// 3. شاشة الإدارة (Admin Dashboard)
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
   @override
@@ -467,7 +450,6 @@ class _AdminScreenState extends State<AdminScreen> {
   final db = DatabaseService();
   final uploadService = UploadService();
   
-  // متغيرات لإضافة منتج
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
   File? _imageFile;
@@ -508,8 +490,6 @@ class _AdminScreenState extends State<AdminScreen> {
             const SizedBox(height: 16),
             TextField(controller: _priceController, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'السعر', prefixIcon: Icon(Icons.monetization_on))),
             const SizedBox(height: 20),
-            
-            // منطقة اختيار الصورة
             GestureDetector(
               onTap: _pickImage,
               child: Container(
@@ -532,7 +512,6 @@ class _AdminScreenState extends State<AdminScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -620,19 +599,15 @@ class _AdminScreenState extends State<AdminScreen> {
     }
 
     setState(() => _isUploading = true);
-
-    // 1. رفع الصورة لـ Uploadcare
     String? imageUrl = await uploadService.uploadImage(_imageFile!);
 
     if (imageUrl != null) {
-      // 2. حفظ المنتج في Firestore
       await db.addProduct(Product(
         name: _nameController.text,
         price: double.parse(_priceController.text),
         image: imageUrl,
       ));
       
-      // إعادة تعيين الحقول
       _nameController.clear();
       _priceController.clear();
       setState(() {
